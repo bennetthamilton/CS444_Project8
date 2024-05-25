@@ -10,6 +10,7 @@ Run: `./main`
     - `free.c`: Frees bits.
     - `inode.c`: Allocates space for the inode.
     - `pack.c`: Reads and Writes unsigned numbers of different numbers of bits/bytes.
+    - `dir.c`: Manages Directory.
 
 ## Functions
 
@@ -40,4 +41,11 @@ Run: `./main`
     - write_u32: Writes an unsigned 32-bit integer to a buffer.
     - write_u16: Writes an unsigned 16-bit integer to a buffer.
     - write_u8: Writes an unsigned 8-bit integer to a buffer.
+
+### dir.c
+    - directory_open: Opens a directory for reading based on the inode number provided.
+    - directory_get: Reads the next directory entry from the directory `dir` into `entry` and returns -1 if it fails.
+    - directory_close: Closes directory.
+    - ls: Lists contents in current directory.
+    - mkfs: Initializes new filesystem.
     
