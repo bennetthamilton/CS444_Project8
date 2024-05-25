@@ -6,16 +6,6 @@
 #include <string.h>
 #include <stdio.h>
 
-struct directory {
-    struct inode *in;
-    unsigned int offset;
-};
-
-struct directory_entry {
-    unsigned int inode_num;
-    char name[16];
-};
-
 struct directory *directory_open(int inode_num){
     // Use iget() to get the inode for this file
     struct inode *in = iget(inode_num);
