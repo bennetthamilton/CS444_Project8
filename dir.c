@@ -3,10 +3,17 @@
 #include "inode.h"
 #include "pack.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 struct directory {
     struct inode *in;
     unsigned int offset;
+};
+
+struct directory_entry {
+    unsigned int inode_num;
+    char name[16];
 };
 
 struct directory *directory_open(int inode_num){
@@ -29,9 +36,55 @@ struct directory *directory_open(int inode_num){
     return dir;
 }
 
+int directory_get(struct directory *dir, struct directory_entry *ent){
+
+    if (dir->offset >= dir->in->size) {
+        return -1;
+    }
+
+    int block_index = dir->offset / BLOCK_SIZE;
+    int block_offset = dir->offset % BLOCK_SIZE;
+
+    unsigned char block[BLOCK_SIZE];
+    int block_num = dir->in->block_ptr[block_index];
+    bread(block_num, block);
+
+    unsigned char *entry = block + block_offset;
+
+    ent->inode_num = read_u16(entry);
+
+    strncpy(ent->name, (char *)(entry + 2), 15);
+    ent->name[15] = '\0';
+
+    dir->offset += ENTRY_SIZE;
+
+    return 0;
+}
+
+void directory_close(struct directory *d){
+    iput(d->in);
+    free(d);
+}
+
+void ls(void){
+    struct directory *dir;
+    struct directory_entry ent;
+
+    dir = directory_open(0);
+
+    while (directory_get(dir, &ent) != -1) {
+        printf("%d %s\n", ent.inode_num, ent.name);
+    }
+
+    directory_close(dir);
+}
+
 void mkfs(void){
     // Get new inode with ialloc
+    int root = 0;
     struct inode *in = ialloc();
+
+    in->inode_num = root;
 
     // Call alloc to get a new data block
     int block_num = alloc();
@@ -48,7 +101,8 @@ void mkfs(void){
 
     // Add the directory entries
     // First entry: inode number of the directory itself, name is "."
-    write_u16(block, in->inode_num);
+    int inode_num = in->inode_num;
+    write_u16(block, inode_num);
     strcpy((char *)(block + 2), ".");
     
     // Second entry: inode number of the parent directory, name is ".."
