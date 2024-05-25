@@ -1,17 +1,12 @@
 #include "dir.h"
 #include "block.h"
 #include "inode.h"
+#include "pack.h"
 #include <stdlib.h>
 
 struct directory {
     struct inode *in;
     unsigned int offset;
-};
-
-struct direntry {
-    unsigned int inode_num; // inode number of the file 2 bytes
-    char name[16];          // name of the file 16 bytes
-    char reserved[14];      // 14 reserved bytes
 };
 
 struct directory *directory_open(int inode_num){
@@ -44,7 +39,7 @@ void mkfs(void){
     // Initialize the inode returned from ialloc
     // flags = 2, size = byte size of directory (64 bytes, 2 entries), block_ptr[0] needs to point to the block we got from alloc
     in->flags = 2;
-    in->size = 2 * sizeof(struct directory);
+    in->size = 2 * ENTRY_SIZE;
     in->block_ptr[0] = block_num;
 
     // Make unsigned char block[BLOCK_SIZE] that you can populate with new directory data
@@ -53,14 +48,12 @@ void mkfs(void){
 
     // Add the directory entries
     // First entry: inode number of the directory itself, name is "."
+    write_u16(block, in->inode_num);
+    strcpy((char *)(block + 2), ".");
+    
     // Second entry: inode number of the parent directory, name is ".."
-    struct direntry *entry1 = (struct directory *)block;
-    entry1->inode_num= in->inode_num;
-    entry1->name[0] = '.';
-
-    struct direntry *entry2 = (struct directory *)(block + sizeof(struct directory));
-    entry2->inode_num = in->inode_num;
-    entry2->name[0] = '..';
+    write_u16(block + ENTRY_SIZE, in->inode_num);
+    strcpy((char *)(block + ENTRY_SIZE + 2), "..");
 
     // Write the block to the disk with bwrite
     bwrite(block_num, block);
